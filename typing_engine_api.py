@@ -1,17 +1,42 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from docx import Document
 from docx.shared import Pt
 import tempfile
 import os
+import logging
 
 app = FastAPI()
 client = OpenAI()  # Uses OPENAI_API_KEY from environment
+logger = logging.getLogger("uvicorn")
 
+# ---------------------------
+# CORS Middleware
+# ---------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# ---------------------------
+# Health Check
+# ---------------------------
+@app.get("/")
+def health():
+    return {"status": "ok", "message": "Clinote backend is running"}
+
+# ---------------------------
+# Transcription Endpoint
+# ---------------------------
 @app.post("/transcribe-docx")
 async def transcribe_docx(file: UploadFile = File(...)):
+    logger.info(f"Received file: {file.filename}")
+
     # Save uploaded audio to a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         tmp.write(await file.read())
@@ -24,6 +49,7 @@ async def transcribe_docx(file: UploadFile = File(...)):
             file=audio_file,
         )
 
+    logger.info("Transcription completed successfully")
     text = transcript.text
 
     # Create DOCX
@@ -43,12 +69,15 @@ async def transcribe_docx(file: UploadFile = File(...)):
         doc.save(tmp_docx.name)
         docx_path = tmp_docx.name
 
+    logger.info("DOCX file generated and ready to stream")
+
     # Stream DOCX back to client
     def iterfile():
         with open(docx_path, "rb") as f:
             yield from f
         os.remove(docx_path)
         os.remove(tmp_path)
+        logger.info("Temporary files removed")
 
     return StreamingResponse(
         iterfile(),
