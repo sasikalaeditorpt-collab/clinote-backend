@@ -45,7 +45,7 @@ class DoctorProfileService:
         bucket = client.bucket(BUCKET_NAME)
 
         prefix = f"{PREFIX_ROOT}{doctor_id}/"
-        print("DEBUG PREFIX USED:", prefix)   # <--- DEBUG PRINT HERE
+        print("DEBUG PREFIX USED:", prefix)
 
         iterator = bucket.list_blobs(prefix=prefix)
 
@@ -99,7 +99,29 @@ class DoctorProfileService:
 
         return samples
 
+    # ------------------------------------------------------------
+    # NEW METHOD — REQUIRED FOR UPLOAD ENDPOINT
+    # ------------------------------------------------------------
+    @staticmethod
+    def upload_sample(doctor_id: str, file_name: str, file_bytes: bytes) -> str:
+        """
+        Uploads a .docx file to:
+        gs://clinote-style-samples/<doctor_id>/<file_name>
+        """
+        client = DoctorProfileService._get_gcs_client()
+        bucket = client.bucket(BUCKET_NAME)
+
+        object_name = f"{doctor_id}/{file_name}"
+        blob = bucket.blob(object_name)
+        blob.upload_from_string(file_bytes)
+
+        print("DEBUG UPLOAD PATH:", object_name)
+
+        return object_name
+
+    # ------------------------------------------------------------
     # Obsolete local‑filesystem functions (kept as no‑ops)
+    # ------------------------------------------------------------
     @staticmethod
     def get_doctor_folder(doctor_id: str):
         return None
