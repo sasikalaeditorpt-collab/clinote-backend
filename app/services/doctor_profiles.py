@@ -39,12 +39,14 @@ class DoctorProfileService:
     def _list_sample_files(doctor_id: str) -> List[str]:
         """
         Returns all .docx object names under:
-        <doctor_id>/samples/
+        <doctor_id>/
         """
         client = DoctorProfileService._get_gcs_client()
         bucket = client.bucket(BUCKET_NAME)
 
         prefix = f"{PREFIX_ROOT}{doctor_id}/"
+        print("DEBUG PREFIX USED:", prefix)   # <--- DEBUG PRINT HERE
+
         iterator = bucket.list_blobs(prefix=prefix)
 
         files = []
@@ -76,7 +78,7 @@ class DoctorProfileService:
     def get_style_samples(doctor_id: str) -> List[str]:
         """
         Loads all .docx samples from:
-        gs://clinote-style-samples/<doctor_id>/samples/
+        gs://clinote-style-samples/<doctor_id>/
         """
         client = DoctorProfileService._get_gcs_client()
         bucket = client.bucket(BUCKET_NAME)
@@ -113,6 +115,6 @@ class DoctorProfileService:
     @staticmethod
     def has_samples(doctor_id: str) -> bool:
         """
-        Returns True if <doctor_id>/samples/ contains at least one .docx file.
+        Returns True if <doctor_id>/ contains at least one .docx file.
         """
         return len(DoctorProfileService._list_sample_files(doctor_id)) > 0
