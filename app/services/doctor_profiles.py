@@ -113,10 +113,14 @@ class DoctorProfileService:
 
         object_name = f"{doctor_id}/{file_name}"
         blob = bucket.blob(object_name)
-        blob.upload_from_string(file_bytes)
+
+        # FIXED: Upload as binary, not text
+        blob.upload_from_file(
+            io.BytesIO(file_bytes),
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
         print("DEBUG UPLOAD PATH:", object_name)
-
         return object_name
 
     # ------------------------------------------------------------
