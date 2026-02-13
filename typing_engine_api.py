@@ -9,14 +9,24 @@ from app.api.routes_doctors import router as doctors_router
 
 app = FastAPI()
 
+# ------------------------------------------------------------
+# CORS CONFIGURATION
+# ------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "*",  # optional, but safe for development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ------------------------------------------------------------
+# ROUTERS
+# ------------------------------------------------------------
 app.include_router(health_router)
 app.include_router(transcribe_router)
 app.include_router(audit_router)
