@@ -31,7 +31,7 @@ app.add_middleware(
 # ------------------------------------------------------------
 app.include_router(health_router)
 app.include_router(transcribe_router)
-app.include_router(audit_router)
+app.include_router(audit_router, prefix="/audit")   # ⭐ FIXED PREFIX
 app.include_router(style_engine_router)
 app.include_router(doctors_router)
 
