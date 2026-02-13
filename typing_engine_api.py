@@ -46,11 +46,14 @@ async def upload_sample(doctor_id: str, file: UploadFile = File(...)):
     """
     try:
         content = await file.read()
+
         object_name = DoctorProfileService.upload_sample(
             doctor_id,
             file.filename,
             content
         )
+
         return {"uploaded": object_name}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
