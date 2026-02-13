@@ -44,7 +44,7 @@ class DoctorProfileService:
         client = DoctorProfileService._get_gcs_client()
         bucket = client.bucket(BUCKET_NAME)
 
-        prefix = f"{PREFIX_ROOT}{doctor_id}/samples/"
+        prefix = f"{PREFIX_ROOT}{doctor_id}/"
         iterator = bucket.list_blobs(prefix=prefix)
 
         files = []
