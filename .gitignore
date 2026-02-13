@@ -1,0 +1,5 @@
+secrets/
+*.json
+*.env
+.env.local
+start_backend.bat
