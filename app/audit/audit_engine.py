@@ -4,8 +4,11 @@ import difflib
 from datetime import datetime
 from docx import Document
 from openpyxl import Workbook
-import pythoncom
-import win32com.client
+import sys
+
+if sys.platform == "win32":
+    import pythoncom
+    import win32com.client
 
 from app.audit.audit_excel_writer import write_excel_summary
 
