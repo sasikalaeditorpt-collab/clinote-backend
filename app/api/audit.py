@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
-import subprocess
 import os
 import zipfile
 import shutil
@@ -24,12 +23,15 @@ async def run_audit_zip(feedback_zip: UploadFile = File(...)):
 
     zip_path = os.path.join(temp_root, feedback_zip.filename)
 
+    # Save uploaded ZIP
     with open(zip_path, "wb") as f:
         f.write(await feedback_zip.read())
 
+    # Extract ZIP
     with zipfile.ZipFile(zip_path, "r") as z:
         z.extractall(temp_root)
 
+    # Locate folder containing 0xxxx / 1xxxx pairs
     feedback_root = None
     for root, dirs, files in os.walk(temp_root):
         if any(d.startswith("0") or d.startswith("1") for d in dirs):
@@ -65,14 +67,21 @@ async def run_audit_zip(feedback_zip: UploadFile = File(...)):
         )
 
         for d in diffs:
+            # DEBUG: print actual keys returned by diff engine
+            print("DIFF KEYS:", d.keys())
+
             all_rows.append({
-                "tracking_number": d["tracking_number"],
-                "patient": d["patient"],
-                "typist": d["typist"],
-                "typed": d["T"],
-                "dictated": d["D"],
-                "T": d["T"],
-                "D": d["D"],
+                "tracking_number": d.get("tracking_number"),
+                "patient": d.get("patient"),
+                "typist": d.get("typist"),
+
+                # Use .get() to avoid KeyError
+                "typed": d.get("T"),
+                "dictated": d.get("D"),
+
+                # Preserve original columns
+                "T": d.get("T"),
+                "D": d.get("D"),
             })
 
         unmatched.extend(unmatched_files)
