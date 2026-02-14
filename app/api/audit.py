@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import FileResponse, JSONResponse
 import os
 import zipfile
@@ -67,21 +67,30 @@ async def run_audit_zip(feedback_zip: UploadFile = File(...)):
         )
 
         for d in diffs:
-            # DEBUG: print actual keys returned by diff engine
-            print("DIFF KEYS:", d.keys())
+            # DEBUG: print key → type for each diff entry
+            print("DIFF ENTRY:", {k: type(v).__name__ for k, v in d.items()})
+
+            # IMPORTANT:
+            # We do NOT pass rich-text objects to Excel.
+            # We convert everything to plain strings safely.
+            typed_val = d.get("T")
+            dictated_val = d.get("D")
+
+            if typed_val is not None:
+                typed_val = str(typed_val)
+            if dictated_val is not None:
+                dictated_val = str(dictated_val)
 
             all_rows.append({
                 "tracking_number": d.get("tracking_number"),
                 "patient": d.get("patient"),
                 "typist": d.get("typist"),
 
-                # Use .get() to avoid KeyError
-                "typed": d.get("T"),
-                "dictated": d.get("D"),
+                "typed": typed_val,
+                "dictated": dictated_val,
 
-                # Preserve original columns
-                "T": d.get("T"),
-                "D": d.get("D"),
+                "T": typed_val,
+                "D": dictated_val,
             })
 
         unmatched.extend(unmatched_files)
