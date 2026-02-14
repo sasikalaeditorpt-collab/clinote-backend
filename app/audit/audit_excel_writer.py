@@ -1,26 +1,30 @@
 import os
 from datetime import datetime
 from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment
+
+
+def autosize_columns(ws):
+    for column_cells in ws.columns:
+        max_length = 0
+        column = column_cells[0].column
+        for cell in column_cells:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[get_column_letter(column)].width = max_length + 2
 
 
 def write_excel_summary(all_rows, unmatched):
     """
-    Produce a legacy-style narrative audit report in Excel.
+    Final legacy format:
 
-    Format:
-        TrackingNumber   Patient
-
-            Typist: <typist>
-            Typed: <typed>
-            Dictated: <dictated>
-
-            Typist: <typist>
-            Typed: <typed>
-            Dictated: <dictated>
-
-        (blank line)
-        (next patient)
+    A: Tracking Number (only on first row of group)
+    B: Patient
+    C: Typist (initials only, blank if none)
+    D: Multi-line cell:
+           Dictated: <dictated>
+           Typed: <typed>
     """
 
     wb = Workbook()
@@ -28,34 +32,41 @@ def write_excel_summary(all_rows, unmatched):
     ws.title = "Audit Summary"
 
     # Header row
-    ws.append(["Audit Summary"])
-    ws["A1"].alignment = Alignment(horizontal="left", vertical="top")
+    headers = ["Tracking Number", "Patient", "Typist", "Diff"]
+    ws.append(headers)
 
-    # Group rows by tracking number + patient
-    grouped = {}
+    for cell in ws[1]:
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    last_tracking = None
+
     for row in all_rows:
-        key = (row.get("tracking_number"), row.get("patient"))
-        grouped.setdefault(key, []).append(row)
+        tracking = row.get("tracking_number", "")
+        patient = row.get("patient", "")
+        typist = row.get("typist") or ""
 
-    # Write each patient block
-    for (tracking, patient), diffs in grouped.items():
+        typed = row.get("typed") or row.get("T") or ""
+        dictated = row.get("dictated") or row.get("D") or ""
 
-        # Patient header
-        ws.append([f"{tracking}    {patient}"])
-        ws.append([""])  # blank line after header
+        # Multi-line cell with prefixes
+        diff_block = f"Dictated: {dictated}\nTyped: {typed}"
 
-        for d in diffs:
-            typist = d.get("typist") or ""
-            typed = d.get("typed") or ""
-            dictated = d.get("dictated") or ""
+        # Only show tracking number on first row of group
+        tracking_cell = tracking if tracking != last_tracking else ""
 
-            # Four-space indentation
-            ws.append([f"    Typist: {typist}"])
-            ws.append([f"    Typed: {typed}"])
-            ws.append([f"    Dictated: {dictated}"])
-            ws.append([""])  # blank line between diff pairs
+        ws.append([
+            tracking_cell,
+            patient,
+            typist,
+            diff_block
+        ])
 
-        ws.append([""])  # blank line between patients
+        # Ensure multi-line display
+        ws[f"D{ws.max_row}"].alignment = Alignment(wrap_text=True)
+
+        last_tracking = tracking
+
+    autosize_columns(ws)
 
     # Optional unmatched sheet
     if unmatched:
@@ -63,11 +74,11 @@ def write_excel_summary(all_rows, unmatched):
         ws2.append(["Unmatched File"])
         for item in unmatched:
             ws2.append([item])
+        autosize_columns(ws2)
 
-    # Save output
     os.makedirs("output", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    excel_path = os.path.join("output", f"audit_summary_{timestamp}.xlsx")
-    wb.save(excel_path)
+    path = os.path.join("output", f"audit_summary_{timestamp}.xlsx")
+    wb.save(path)
 
-    return excel_path
+    return path
