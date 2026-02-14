@@ -3,7 +3,6 @@ import re
 import difflib
 from datetime import datetime
 from docx import Document
-from openpyxl import Workbook
 import sys
 
 if sys.platform == "win32":
@@ -87,8 +86,7 @@ def convert_doc_to_docx(doc_path):
 
             return docx_path
 
-        except Exception as e:
-            print(f"Failed to convert {doc_path} to .docx: {e}")
+        except Exception:
             return None
 
     return None
@@ -140,6 +138,19 @@ def extract_minimal_change(mt_sentence, ed_sentence, context_words=5):
         ed_snippets.append(ed_snippet)
 
     return " | ".join(mt_snippets), " | ".join(ed_snippets)
+
+
+# ------------------------------------------------------------
+# COLOR RUN BUILDER
+# ------------------------------------------------------------
+def build_runs(sentence, mode):
+    """
+    mode = 'typed' or 'dictated'
+    typed = red
+    dictated = blue
+    """
+    color = "FF0000" if mode == "typed" else "0000FF"
+    return [(sentence, color)]
 
 
 # ------------------------------------------------------------
@@ -204,7 +215,6 @@ def process_folder_pair(mt_folder, ed_folder, tracking_number):
         ed_text = read_docx_text(ed_docx)
         typist = extract_typist_initials(ed_text)
 
-        ed_text = read_docx_text(ed_docx)
         differences = compare_sentences(mt_text, ed_text)
         last_name = extract_last_name(mt_file)
 
@@ -213,8 +223,14 @@ def process_folder_pair(mt_folder, ed_folder, tracking_number):
                 "tracking_number": tracking_number,
                 "patient": last_name,
                 "typist": typist,
-                "T": d["T"],
-                "D": d["D"]
+
+                # Excel writer expects these:
+                "typed": d["T"],
+                "dictated": d["D"],
+
+                # Color runs:
+                "typed_runs": build_runs(d["T"], "typed"),
+                "dictated_runs": build_runs(d["D"], "dictated")
             })
 
     return diffs_output, unmatched
@@ -252,17 +268,3 @@ if __name__ == "__main__":
         unmatched.extend(unmatched_files)
 
     write_excel_summary(all_diffs, unmatched)
-
-    # Desktop-only notification block
-    from app.audit.audit_state import set_finished
-    from app.audit.audit_events import broadcast
-    from app.audit.audit_routes import cleanup_reports
-
-    monthly_dir = r"D:\AuditEngine\Monthly"
-    files = [f for f in os.listdir(monthly_dir) if f.lower().endswith(".xlsx")]
-
-    if files:
-        latest = sorted(files, reverse=True)[0]
-        set_finished(latest)
-        broadcast(f'{{"status":"finished","report":"{latest}"}}')
-        cleanup_reports()
