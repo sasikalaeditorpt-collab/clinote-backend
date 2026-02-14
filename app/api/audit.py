@@ -15,12 +15,6 @@ from app.audit.audit_excel_writer import write_excel_summary
 router = APIRouter()
 
 
-@router.post("/run")
-def run_audit():
-    subprocess.Popen(["python", r"D:\clinote-app\app\audit\audit_engine.py"])
-    return {"status": "running"}
-
-
 @router.post("/run-audit")
 async def run_audit_zip(feedback_zip: UploadFile = File(...)):
     temp_root = "temp_feedback"
