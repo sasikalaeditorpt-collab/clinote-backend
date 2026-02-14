@@ -67,30 +67,13 @@ async def run_audit_zip(feedback_zip: UploadFile = File(...)):
         )
 
         for d in diffs:
-            # DEBUG: print key → type for each diff entry
-            print("DIFF ENTRY:", {k: type(v).__name__ for k, v in d.items()})
-
-            # IMPORTANT:
-            # We do NOT pass rich-text objects to Excel.
-            # We convert everything to plain strings safely.
-            typed_val = d.get("T")
-            dictated_val = d.get("D")
-
-            if typed_val is not None:
-                typed_val = str(typed_val)
-            if dictated_val is not None:
-                dictated_val = str(dictated_val)
-
+            # Plain text only — no rich text, no runs
             all_rows.append({
                 "tracking_number": d.get("tracking_number"),
                 "patient": d.get("patient"),
                 "typist": d.get("typist"),
-
-                "typed": typed_val,
-                "dictated": dictated_val,
-
-                "T": typed_val,
-                "D": dictated_val,
+                "typed": d.get("typed") or d.get("T") or "",
+                "dictated": d.get("dictated") or d.get("D") or "",
             })
 
         unmatched.extend(unmatched_files)
