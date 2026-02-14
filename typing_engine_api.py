@@ -7,6 +7,9 @@ from app.api.audit import router as audit_router
 from app.api.routes_style_engine import router as style_engine_router
 from app.api.routes_doctors import router as doctors_router
 
+# ⭐ NEW IMPORT — ConvertToPdf router
+from app.api.convert_to_pdf import router as convert_to_pdf_router
+
 from app.services.doctor_profiles import DoctorProfileService
 
 app = FastAPI()
@@ -34,6 +37,9 @@ app.include_router(transcribe_router)
 app.include_router(audit_router, prefix="/audit")   # ⭐ FIXED PREFIX
 app.include_router(style_engine_router)
 app.include_router(doctors_router)
+
+# ⭐ NEW ROUTER — ConvertToPdf
+app.include_router(convert_to_pdf_router, prefix="/convert", tags=["ConvertToPdf"])
 
 # ------------------------------------------------------------
 # DIRECT UPLOAD ENDPOINT (NEW)
