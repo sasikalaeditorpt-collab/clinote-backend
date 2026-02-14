@@ -43,7 +43,9 @@ def run_soffice_convert(input_path: str, output_dir: str, target: str = "pdf"):
 
 
 @router.post("/pdf")
-async def convert_to_pdf(files: List[UploadFile] = File(...)):
+async def convert_to_pdf(
+    files: List[UploadFile] = File(..., description="Upload multiple files")
+):
     """
     Accept multiple .doc/.docx/.xls/.xlsx files,
     convert all to PDF using LibreOffice,
